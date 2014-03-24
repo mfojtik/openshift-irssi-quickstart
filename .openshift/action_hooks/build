@@ -1,0 +1,20 @@
+#!/bin/bash -e
+
+pushd ${OPENSHIFT_DATA_DIR} >/dev/null
+mkdir -p ./build
+
+curl --output ./build/glib.tar.xz -qs http://ftp.gnome.org/pub/GNOME/sources/glib/2.39/glib-2.39.91.tar.xz 
+curl --output ./build/irssi.tar.gz -qs http://www.irssi.org/files/irssi-0.8.16-rc1.tar.bz2
+
+# Install glib
+#
+(cd build && tar -xf glib.tar.xz && cd ./glib && ./configure --prefix=$OPENSHIFT_DATA_DIR/glib && make install)
+
+# Install irssi
+
+(cd build && tar -xf irssi.tar.gz && cd ./irssi && PKG_CONFIG_PATH=$OPENSHIFT_DATA_DIR/glib ./configure --disable-glibtest --prefix=$OPENSHIFT_DATA_DIR/irssi && make install)
+
+mkdir -p bin
+ln -sf ${OPENSHIFT_DATA_DIR}/irssi/bin/irssi ./bin/irssi
+
+popd >/dev/null
