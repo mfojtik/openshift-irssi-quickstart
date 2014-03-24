@@ -1,0 +1,22 @@
+#!/bin/bash
+
+export IRSSI_PATH=${OPENSHIFT_DATA_DIR}/irssi/bin
+export PATH=$PATH:$IRSSI_PATH
+
+mkdir -p $OPENSHIFT_DATA_DIR/.irssi
+
+echo "Restarting irssi tmux session..."
+echo
+
+tmux -S $OPENSHIFT_DATA_DIR/tmux.socket kill-session -t irssi
+tmux -S $OPENSHIFT_DATA_DIR/tmux.socket new-session -d -s irssi "irssi --home=$OPENSHIFT_DATA_DIR"
+
+echo "IRSSI tmux session started. Configs located at 'app-root/data/.irssi'"
+echo "Do not forget to set your nick name before you connect to IRC server:"
+echo
+echo "/set nick yournickname"
+echo
+echo "To attach to tmux session just run:"
+echo
+echo "$ tmux -S \$OPENSHIFT_DATA_DIR/tmux.socket attach"
+echo

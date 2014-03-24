@@ -1,18 +1,45 @@
 #!/bin/bash -e
 
+if [ -f ${OPENSHIFT_DATA_DIR}/irssi/bin/irssi ]; then
+  echo "irssi already compiled, nothing to do..."
+  exit 0
+fi
+
+function extract {
+  local source=$(readlink -f $1)
+  local destination="$2"
+  mkdir -p $destination
+  pushd $destination >/dev/null
+  tar --strip-components=1 -xf "$source"
+  popd >/dev/null
+}
+
 pushd ${OPENSHIFT_DATA_DIR} >/dev/null
 mkdir -p ./build
 
-curl --output ./build/glib.tar.xz -qs http://ftp.gnome.org/pub/GNOME/sources/glib/2.39/glib-2.39.91.tar.xz 
-curl --output ./build/irssi.tar.gz -qs http://www.irssi.org/files/irssi-0.8.16-rc1.tar.bz2
+curl --output ./build/glib.tar.xz -qs http://ftp.gnome.org/pub/GNOME/sources/glib/2.39/glib-2.39.91.tar.xz
+curl --output ./build/irssi.tar.gz -Lqs http://www.irssi.org/files/irssi-0.8.16-rc1.tar.gz
 
 # Install glib
 #
-(cd build && tar -xf glib.tar.xz && cd ./glib && ./configure --prefix=$OPENSHIFT_DATA_DIR/glib && make install)
+if [ ! -f $OPENSHIFT_DATA_DIR/glib/lib/libglib-2.0.so.0 ]; then
+  echo "Building glib... (this might take a while...)"
+  (cd build && extract glib.tar.xz glib && cd ./glib && ./configure --prefix=$OPENSHIFT_DATA_DIR/glib && make install) & >/dev/null
+fi
 
 # Install irssi
 
-(cd build && tar -xf irssi.tar.gz && cd ./irssi && PKG_CONFIG_PATH=$OPENSHIFT_DATA_DIR/glib ./configure --disable-glibtest --prefix=$OPENSHIFT_DATA_DIR/irssi && make install)
+if [ ! -f ${OPENSHIFT_DATA_DIR}/irssi/bin/irssi ]; then
+  echo "Building irssi..."
+  (cd build && extract irssi.tar.gz irssi && cd ./irssi && PKG_CONFIG_PATH=$OPENSHIFT_DATA_DIR/glib/lib/pkgconfig ./configure --disable-glibtest --prefix=$OPENSHIFT_DATA_DIR/irssi && make install) &> /dev/null
+fi
+
+echo
+echo "Congratulations, irssi is now installed!"
+echo
+echo "To launch it, rhc ssh into gear and execute:"
+echo "$ \$OPENSHIFT_DATA_DIR/irssi/bin/irssi"
+echo
 
 mkdir -p bin
 ln -sf ${OPENSHIFT_DATA_DIR}/irssi/bin/irssi ./bin/irssi
